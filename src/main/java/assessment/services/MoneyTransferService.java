@@ -1,18 +1,21 @@
 package assessment.services;
-
 import assessment.repository.AccountRepository;
 import assessment.dto.AccountDto;
 import assessment.dto.MoneyTransferRequestDto;
 import assessment.exception.AccountNotFoundException;
 import assessment.exception.NotEnoughBalanceException;
 import assessment.exception.SameAccountException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
+@Service
 public class MoneyTransferService {
 
     private final AccountRepository repository;
 
+    @Autowired
     public MoneyTransferService(AccountRepository repository) {
         this.repository = repository;
     }
@@ -51,13 +54,13 @@ public class MoneyTransferService {
     }
 
     private void verifyAccounts(AccountDto senderAccount, AccountDto receiverAccount) {
-        if(senderAccount == null) {
+        if (senderAccount == null) {
             throw new AccountNotFoundException();
         }
-        if(receiverAccount == null) {
+        if (receiverAccount == null) {
             throw new AccountNotFoundException();
         }
-        if(senderAccount.getAccountId().equals(receiverAccount.getAccountId())) {
+        if (senderAccount.getAccountId().equals(receiverAccount.getAccountId())) {
             throw new SameAccountException();
         }
     }
