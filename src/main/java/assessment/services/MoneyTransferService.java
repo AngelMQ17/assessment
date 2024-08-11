@@ -20,27 +20,45 @@ public class MoneyTransferService {
     public void sendMoneyBetweenAccounts(MoneyTransferRequestDto moneyTransferRequestDto) throws NotEnoughBalanceException {
         AccountDto senderAccount = repository.getReferenceById(moneyTransferRequestDto.getSenderAccountId());
         AccountDto receiverAccount = repository.getReferenceById(moneyTransferRequestDto.getReceiverAccountId());
-        if(senderAccount == null || receiverAccount == null) {
-            throw new AccountNotFoundException();
-        }
-        if(senderAccount.getAccountId().equals(receiverAccount.getAccountId())) {
-            throw new SameAccountException();
-        }
-        if(senderAccount.isTreasuryAccount() || !(senderAccount.getAccountBalance().subtract(moneyTransferRequestDto.getAmount()).compareTo(BigDecimal.ZERO) < 0)) {
+        verifyAccounts(senderAccount, receiverAccount);
+        updateSenderBalance(senderAccount, moneyTransferRequestDto);
+        updateReceiverBalance(receiverAccount, moneyTransferRequestDto);
+    }
+
+    private static boolean amountIsPositive(AccountDto senderAccount, MoneyTransferRequestDto moneyTransferRequest) {
+        return !(senderAccount.getAccountBalance().subtract(moneyTransferRequest.getAmount()).compareTo(BigDecimal.ZERO) < 0);
+    }
+
+    private void updateSenderBalance(AccountDto senderAccount, MoneyTransferRequestDto moneyTransferRequest) throws NotEnoughBalanceException {
+        if(senderAccount.isTreasuryAccount() || amountIsPositive(senderAccount, moneyTransferRequest)) {
             repository.findById(senderAccount.getAccountId())
                     .map(account -> {
-                        senderAccount.setAccountBalance(senderAccount.getAccountBalance().subtract(moneyTransferRequestDto.getAmount()));
+                        senderAccount.setAccountBalance(senderAccount.getAccountBalance().subtract(moneyTransferRequest.getAmount()));
                         return repository.save(account);
                     });
         }
         else {
             throw new NotEnoughBalanceException(senderAccount.getAccountId());
         }
+    }
 
+    private void updateReceiverBalance(AccountDto receiverAccount, MoneyTransferRequestDto moneyTransferRequest) {
         repository.findById(receiverAccount.getAccountId())
                 .map(account -> {
-                    receiverAccount.setAccountBalance(receiverAccount.getAccountBalance().add(moneyTransferRequestDto.getAmount()));
+                    receiverAccount.setAccountBalance(receiverAccount.getAccountBalance().add(moneyTransferRequest.getAmount()));
                     return repository.save(account);
                 });
+    }
+
+    private void verifyAccounts(AccountDto senderAccount, AccountDto receiverAccount) {
+        if(senderAccount == null) {
+            throw new AccountNotFoundException();
+        }
+        if(receiverAccount == null) {
+            throw new AccountNotFoundException();
+        }
+        if(senderAccount.getAccountId().equals(receiverAccount.getAccountId())) {
+            throw new SameAccountException();
+        }
     }
 }
