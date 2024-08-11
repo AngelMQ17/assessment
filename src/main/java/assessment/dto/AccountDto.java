@@ -51,6 +51,10 @@ public class AccountDto {
 		return isTreasuryAccount;
 	}
 
+	public void setAccountId(Long accountId) {
+		this.accountId = accountId;
+	}
+
 	public void setAccountName(String accountName) {
 		this.accountName = accountName;
 	}
