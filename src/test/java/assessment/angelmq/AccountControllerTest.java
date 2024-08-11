@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AccountController.class)
@@ -40,7 +41,8 @@ public class AccountControllerTest {
 		AccountDto account_2 = new AccountDto("Test 2", Currency.getInstance("USD"), new BigDecimal("200.00"), false);
 		List<AccountDto> accountDtoList = Arrays.asList(account_1, account_2);
 
-		when(accountController.getAllAccounts()).thenReturn(ResponseEntity.ok(accountDtoList));
+		when(accountController.getAllAccounts())
+				.thenReturn(ResponseEntity.ok(accountDtoList));
 
 		mockMvc.perform(get("/accounts"))
 				.andExpect(status().isOk())
@@ -54,11 +56,40 @@ public class AccountControllerTest {
 		AccountDto account_1 = new AccountDto("Test 1", Currency.getInstance("EUR"), new BigDecimal("100.00"), true);
 		account_1.setAccountId(Long.valueOf(1));
 
-		when(accountController.getAccountById(account_1.getAccountId())).thenReturn(ResponseEntity.ok(account_1));
+		when(accountController.getAccountById(account_1.getAccountId()))
+				.thenReturn(ResponseEntity.ok(account_1));
 
 		mockMvc.perform(get("/accounts/{id}", account_1.getAccountId()))
 				.andExpect(status().isOk())
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
 				.andExpect(jsonPath("$.accountName").value("Test 1"));
+	}
+
+	@Test
+	@DisplayName("POST /account - Create new account")
+	public void testCreateNewAccount() throws Exception {
+		AccountDto account_1 = new AccountDto("Test 1", Currency.getInstance("EUR"), new BigDecimal("100.00"), true);
+		when(accountController.newAccount(account_1))
+				.thenReturn(ResponseEntity.status(HttpStatus.CREATED).body(account_1));
+
+		mockMvc.perform(post("/accounts")
+						.content("{\"accountName\":\"TEST\",\"accountCurrency\":\"EUR\",\"accountBalance\":300.00,\"isTreasuryAccount\":true}\"")
+						.contentType(APPLICATION_JSON))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	@DisplayName("PUT /account/{accountId{ - Update account")
+	public void testUpdateAccount() throws Exception {
+		AccountDto accountToUpdate = new AccountDto("Test 1", Currency.getInstance("EUR"), new BigDecimal("100.00"), true);
+		accountToUpdate.setAccountId(Long.valueOf(1));
+
+		when(accountController.updateAccount(accountToUpdate, accountToUpdate.getAccountId()))
+				.thenReturn(ResponseEntity.ok(accountToUpdate));
+
+		mockMvc.perform(put("/accounts/{id}", accountToUpdate.getAccountId())
+						.content("{\"accountName\":\"UPDATE NAME\",\"accountCurrency\":\"USD\",\"accountBalance\":300.00}\"")
+						.contentType(APPLICATION_JSON))
+				.andExpect(status().isOk());
 	}
 }
